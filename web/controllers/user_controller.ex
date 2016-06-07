@@ -1,6 +1,8 @@
 defmodule Rumbl.UserController do
   use Rumbl.Web, :controller
 
+  plug :authentication_required when action in [:index, :show]
+
   alias Rumbl.User
 
   def index(conn, _params) do
@@ -19,10 +21,11 @@ defmodule Rumbl.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
-    changeset = User.changeset(%User{}, user_params)
+    changeset = User.registration_changeset(%User{}, user_params)
     case Repo.insert(changeset) do
       {:ok, user} ->
         conn
+        |> Rumbl.Auth.login(user)
         |> put_flash(:info, "#{user.name} created!")
         |> redirect(to: user_path(conn, :index))
       {:error, changeset} ->
